@@ -178,3 +178,44 @@ in the above case the "aws_instance.app_server" is the resource ID that we can r
 
 ---
 ## Store Remote State (terraform cloud)
+
+you have built, changed, and destroyed infrastructure from your local machine. This is great for testing and development, but in production environments you should keep your state secure and encrypted, where your teammates can access it to collaborate on infrastructure. The best way to do this is by running Terraform in a remote environment with shared access to state.
+i.e. by using terraform cloud 
+
+sign up to terraform cloud: https://app.terraform.io/public/signup/account
+
+in main.tf add this code: 
+````
+terraform {
+  backend "remote" { // this 'backend' block is what we added
+    organization = "mark-learning"
+    workspaces {
+      name = "Example-workspace"
+    }
+  }
+  
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.16"
+    }
+  }
+
+  required_version = ">= 1.2.0"
+}
+````
+
+login to terraform using the CLI `terraform login`
+now you have configured the remote backend, run `terraform init` to re-initialize the config and migrate the state to the cloud.
+
+now terraform has migrated your state to the cloud, delete the local state file (terraform.tfstate)
+
+the `terraform init` command greated the example-workspace in your terraform organisation. 
+your workspace needs to be configured with your AWS credentials to authenticate the AWS provider. 
+- naviggate to your workspace in the terraform cloud and select the variables cloud 
+  - note: something like this: `https://app.terraform.io/app/<organization name>/workspaces/<workspace name>`
+- go to the variables tab, click add variable, select environment variables and add aws access key and value as "AWS_ACCESS_KEY_ID" and the aws secret key as "AWS_SECRET_ACCESS_KEY"
+
+now run `terraform apply` to trigger a run in terraform cloud
+
+terraform is now storing your state remotely in terraform cloud. remote state keeps working as a team easier and allows you to store your secrets in one location. 

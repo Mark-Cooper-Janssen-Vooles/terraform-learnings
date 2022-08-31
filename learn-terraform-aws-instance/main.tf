@@ -1,4 +1,11 @@
 terraform {
+  backend "remote" {
+    organization = "mark-learning"
+    workspaces {
+      name = "Example-workspace"
+    }
+  }
+  
   required_providers {
     aws = {
       source  = "hashicorp/aws"
