@@ -13,6 +13,7 @@ Contents:
 - [Destroy Infrastructure](#destroy-infrastructure)
 - [Define Input Variables](#define-input-variables)
 - [Query Data with Outputs](#query-data-with-outputs)
+- [Store Remote State (terraform cloud)](#store-remote-state-terraform-cloud)
 
 
 ---
@@ -154,3 +155,26 @@ terraform has many ways to use and set varaibles so you can avoid having to set 
 
 ---
 ## Query Data with Outputs
+
+Use output values to organise data to be easily queried and shown back to the user. 
+
+create an 'outputs.tf' file like below:
+````
+output "instance_id" {
+  description = "ID of the EC2 instance"
+  value       = aws_instance.app_server.id
+}
+
+output "instance_public_ip" {
+  description = "Public IP address of the EC2 instance"
+  value       = aws_instance.app_server.public_ip
+}
+````
+
+in the above case the "aws_instance.app_server" is the resource ID that we can reference
+=> we can then run `terraform apply` and the output will be shown. 
+=> we can also run `terraform output` and the output will be shown.
+
+
+---
+## Store Remote State (terraform cloud)
