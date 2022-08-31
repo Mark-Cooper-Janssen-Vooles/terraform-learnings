@@ -10,6 +10,9 @@ Contents:
 - [Install terraform](#install-terraform)
 - [Build Infrastructure](#build-infrastructure)
 - [Change Infrastructure](#change-infrastructure)
+- [Destroy Infrastructure](#destroy-infrastructure)
+- [Define Input Variables](#define-input-variables)
+- [Query Data with Outputs](#query-data-with-outputs)
 
 
 ---
@@ -99,3 +102,55 @@ Now we run the `terraform apply` command. Before it applies changes, it prints o
 ## Change Infrastructure
 When using terraform in production, we recommend that you use a version control system to manage your configuration files, and store your state in a remote backend such as terraform cloud or terraform enterprise.
 
+We make a change to the AMI: `ami           = "ami-08d70e59c07c61a3a"` and then run `terraform apply` again. 
+
+When there is a -/+ prefix, it means terraform will destroy and recreate the instance rather than update it in place. type `yes` and it will destroy it and recreate it in its place
+
+you can then use `terraform show` to see the new values associated with the instance.
+
+
+---
+## Destroy Infrastructure
+
+Once you no longer need infrastructure, you may want to delete it to save security and cost. 
+
+`terraform destroy` destroys resources defined in your terraform configuration, it does not destroy resources running elsewhere that are not managed by your configuration. 
+
+running `terraform destroy` prints out an execution plan telling you what it will do. the "-" prefix indicates the instance will be destroyed. 
+
+
+---
+## Define Input Variables
+
+Terraform can use variables to make your configuration more dynamic and flexible. 
+
+makes a variables.tf file:
+````
+variable "instance_name" {
+  description = "Value of the Name tag for the EC2 instance"
+  type        = string
+  default     = "ExampleAppServerInstance"
+}
+````
+
+then in main.tf references it 
+````
+resource "aws_instance" "app_server" {
+  ami           = "ami-08d70e59c07c61a3a"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = var.instance_name // references it here
+  }
+}
+````
+
+use `terraform apply`
+
+it is created with the same name, as we replaced the variable with the same name.
+can now run `terraform apply -var 'instance_name=YetAnotherName'`
+using the command line like above will not save the new variable. 
+terraform has many ways to use and set varaibles so you can avoid having to set them each time. 
+
+---
+## Query Data with Outputs
