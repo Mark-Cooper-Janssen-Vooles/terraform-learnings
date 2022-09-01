@@ -1,9 +1,17 @@
 ## Terraform learnings 
+
+AWS documentation here: 
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs
+
+
 tutorials from here: https://learn.hashicorp.com/collections/terraform/aws-get-started
 
-Checkout 'fundamentals': https://learn.hashicorp.com/terraform 
 
-might be some other good ones here: https://learn.hashicorp.com/collections/terraform/certification-associate-tutorials
+Do these: 
+- https://learn.hashicorp.com/collections/terraform/certification-associate-tutorials
+- https://learn.hashicorp.com/tutorials/terraform/lambda-api-gateway
+- https://learn.hashicorp.com/collections/terraform/automation (do some of these)
+- https://learn.hashicorp.com/collections/terraform/recommended-patterns (do whats interesting)
 
 Contents: 
 - [What is infrastrucutre as code with Terraform?](#what-is-infrastrucutre-as-code-with-terraform)
