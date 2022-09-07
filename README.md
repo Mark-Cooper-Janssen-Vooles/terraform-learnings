@@ -22,6 +22,8 @@ Contents:
 - [Define Input Variables](#define-input-variables)
 - [Query Data with Outputs](#query-data-with-outputs)
 - [Store Remote State (terraform cloud)](#store-remote-state-terraform-cloud)
+- [Lock and Upgrade Provider versions](#lock-and-upgrade-provider-versions)
+- [Modules Overview](#modules-overview)
 
 
 ---
@@ -227,3 +229,34 @@ your workspace needs to be configured with your AWS credentials to authenticate 
 now run `terraform apply` to trigger a run in terraform cloud
 
 terraform is now storing your state remotely in terraform cloud. remote state keeps working as a team easier and allows you to store your secrets in one location. 
+
+---
+## Lock and Upgrade Provider versions 
+
+you can set your versions using various options, i.e.
+````
+terraform {
+  required_providers {
+    random = {
+      source  = "hashicorp/random"
+      version = "3.0.0" // will always ask for exactly 3.0.0
+    }
+
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 2.0.0" // will always ask for a version greater than 2.0.0
+    }
+  }
+
+  required_version = ">= 1.1"
+}
+````
+
+when you `terraform init` the above config, terraform will look for the terraform.lock.hcl file (all terraform 1.1 or higher use this) and if the terraform lock file (similar to package.lock) has a specific version saved, i.e. 2.5 for hasicorp/aws, it will use that even if there is a later version i.e. 4.0.0. We should always commit the terraform.lock.hcl file.
+
+to get the latest version (and see it updated in the lock file), `terraform init -upgrade`
+
+its generally better to lock a version in the terraform config rather than use something like ">=". 
+
+---
+## Modules Overview
