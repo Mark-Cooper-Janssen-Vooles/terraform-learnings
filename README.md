@@ -24,6 +24,10 @@ Contents:
 - [Store Remote State (terraform cloud)](#store-remote-state-terraform-cloud)
 - [Lock and Upgrade Provider versions](#lock-and-upgrade-provider-versions)
 - [Modules Overview](#modules-overview)
+  - Calling Modules
+  - Using the Terraform Registry
+- [Resource Dependencies](#resource-dependencies)
+- [Manage Resource Drift](#manage-resource-drift)
 
 
 ---
@@ -260,3 +264,113 @@ its generally better to lock a version in the terraform config rather than use s
 
 ---
 ## Modules Overview
+
+As the infrastructure becomes increasing complex, it makes less sense to create one terraform file. Terraform modules can solve this problem. 
+
+Modules can help:
+- Organise configuration
+- Encapsulate configuration
+- Re-use configuration
+- Provide consistency and ensure best practices
+
+A terraform module is a set of Terraform configuration files in a single directory. Even a simple configuration consisting of a single directory with one or more .tf files is a module. When you run terraform commands directly from such a directory, it is considered the root module. 
+
+#### Calling Modules
+Terraform commands will only directly use the configuration files in one directory, the current working directory. However your configuration can use "module blocks" to call modules in other directories. 
+
+Modules can either be loaded from the local filesystem or a remote source. 
+Terraform supports a variety of remote sources: Terraform registry, most version control systems, HTTP URLs, terraform cloud or terraform enterprise. 
+
+Terraform modules are similar to the concepts of libraries, packages, or modules found in most programming languages. 
+
+Its recommended Terraform practitioners use modules by following these best practices: `terraform-<PROVIDER>-<NAME>`. You must follow this convention in order to publish to terraform cloud or terraform enterprise module registries. 
+
+#### Using the Terraform Registry
+
+Example for AWS vpc registry: https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/3.14.0?_gl=1*1p6u3zy*_ga*MjU5MDU1MDQzLjE2NjE5MzA2NDI.*_ga_P7S46ZYEKW*MTY2MjUyMzEyOS43LjEuMTY2MjUyMzE2NS4wLjAuMA.. 
+- has 'source' argument which is required, it can be a given string or URL for a local module 
+- the 'version' argument which is not required but highly recommended 
+- On the Terraform Registry page for the AWS VPC module, click on the Inputs tab to find the input arguments that the module supports.
+
+example:
+````
+module "ec2_instances" {
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "3.5.0"
+  count   = 2
+
+  name = "my-ec2-cluster"
+
+  ami                    = "ami-0c5204531f799e0c6"
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = [module.vpc.default_security_group_id]
+  subnet_id              = module.vpc.public_subnets[0]
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}
+````
+
+- When using a new module for the first time, after adding it to your .tf config file, you must run either `terraform init` or `terraform get` to install the module. It will then install it in the '.terraform/modules' directory 
+
+
+---
+## Resource Dependencies 
+Example of an implicit dependency:
+````
+resource "aws_instance" "example_a" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.micro"
+}
+
+resource "aws_instance" "example_b" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.micro"
+}
+
+resource "aws_eip" "ip" {
+  vpc      = true
+  instance = aws_instance.example_a.id
+}
+````
+
+In the above example, there is an implicit dependency that "example_a" ec2 instance must be created before "aws_eip" is created, as it depends on "example_a"'s IP. 
+
+
+Explicit dependency: 
+We use the `depends_on` argument. 
+Sometimes there are dependencies between resources that are not visible to Terraform. The `depends_on` argument is accepted by any resource or module block and accepts a list. 
+
+i.e.
+````
+resource "aws_s3_bucket" "example" { }
+
+resource "aws_instance" "example_c" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.micro"
+
+  depends_on = [aws_s3_bucket.example]
+}
+
+module "example_sqs_queue" {
+  source  = "terraform-aws-modules/sqs/aws"
+  version = "3.3.0"
+
+  depends_on = [aws_s3_bucket.example, aws_instance.example_c]
+}
+````
+
+
+---
+## Manage Resource Drift 
+The Terraform state file is a record of all resources Terraform manages. You should not make manual changes to resources controlled by Terraform, because the state file will be out of sync, or "drift," from the real infrastructure. If your state and configuration do not match your infrastructure, Terraform will attempt to reconcile your infrastructure, which may unintentionally destroy or recreate resources.
+
+You can run `terraform state list` to review the resources managed by Terraform in your state file. 
+
+If you do a `terraform init` and `terraform apply`, create the resources, then fiddle with them via the AWS CLI or UI - then the resources will drift from the terraform state. 
+
+Terraform compares your state file to real infrastructure wehenever you invoke `terraform plan` or `terraform apply`. If you suspect your infrastructure changed outside of the Terraform workflow, you can use `terraform plan -refresh-only` to inspect what the changes to your state file would be. 
+
+If you run `terraform plan` or `terraform apply` without `-refresh-only`, terraform will attempt to revert your manual changes. 
