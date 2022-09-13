@@ -2,16 +2,7 @@
 
 AWS documentation here: 
 https://registry.terraform.io/providers/hashicorp/aws/latest/docs
-
-
-tutorials from here: https://learn.hashicorp.com/collections/terraform/aws-get-started
-
-
-Do these: 
-- https://learn.hashicorp.com/collections/terraform/certification-associate-tutorials
-- https://learn.hashicorp.com/tutorials/terraform/lambda-api-gateway
-- https://learn.hashicorp.com/collections/terraform/automation (do some of these)
-- https://learn.hashicorp.com/collections/terraform/recommended-patterns (do whats interesting)
+tutorials mostly from here: https://learn.hashicorp.com/collections/terraform/aws-get-started
 
 Contents: 
 - [What is infrastrucutre as code with Terraform?](#what-is-infrastrucutre-as-code-with-terraform)
@@ -28,6 +19,7 @@ Contents:
   - Using the Terraform Registry
 - [Resource Dependencies](#resource-dependencies)
 - [Manage Resource Drift](#manage-resource-drift)
+- [Running Terraform in Automation]
 
 
 ---
@@ -374,3 +366,53 @@ If you do a `terraform init` and `terraform apply`, create the resources, then f
 Terraform compares your state file to real infrastructure wehenever you invoke `terraform plan` or `terraform apply`. If you suspect your infrastructure changed outside of the Terraform workflow, you can use `terraform plan -refresh-only` to inspect what the changes to your state file would be. 
 
 If you run `terraform plan` or `terraform apply` without `-refresh-only`, terraform will attempt to revert your manual changes. 
+
+
+---
+## Running Terraform in Automation
+
+- tut here: https://learn.hashicorp.com/tutorials/terraform/automate-terraform?in=terraform/automation 
+- Some teams will choose to run terraform entirely within an orchestration tool such as Jenkins or teamcity 
+
+
+Automated Terraform CLI workflow
+- similar to local CLI usage:
+  - initialize the terraform working directory
+  - produce a plan for changing resources to match the current config 
+  - have a human operator review that plan, to ensure it is acceptable 
+  - Apply the changes described by the plan
+- steps 1, 2, and 4 can be carried out with some additional options 
+
+
+Controlling terraform output in automation
+- by default some terraform commands conclude by presenting a description of a next step, including a specific command to run next
+  - an automation tool will make these un-actionable 
+  - When the environment variable TF_IN_AUTOMATION is set to any non-empty value, Terraform makes some minor adjustments to its output to de-emphasize specific commands to run. 
+
+
+Interactive Approval of Plans
+- seems to depend on the cicd tool being used. 
+- generally implemented via a build pipeline feature, where different steps can be applied in sequence, with later steps having access to data produced by earlier steps. 
+- recommended approach is to allow only one plan to be outstanding at a time. 
+
+
+Auto-approval of plans 
+- manual review of plans is strongly recommended for production use-cases
+- sometimes desirable to take a more automatic approach when deploying in pre-production or development situations 
+  - when manual approval not required, can use:
+  - `terraform init -input=false`
+  - `terraform apply -input=false -auto-approve`
+
+
+Multi-environment deployment 
+- i.e. for environments such as pre-release testing 
+- two most interesting commands for this: 
+  - `terraform init`
+    - used with additional options to tailor the backend config 
+  - `terraform workspace`
+    - used to safely switch between multiple states for the same config stored in a single backend 
+
+
+Pre-installed plugins 
+- In default usage, terraform init downloads and installs the plugins for any providers used in the configuration automatically, placing them in a subdirectory of the .terraform directory.
+  - In automation environments, it can be desirable to disable this behavior and instead provide a fixed set of plugins already installed on the system where Terraform is running. This then avoids the overhead of re-downloading the plugins on each execution, and allows the system administrator to control which plugins are available.
